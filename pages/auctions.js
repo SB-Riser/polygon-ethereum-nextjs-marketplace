@@ -109,6 +109,10 @@ export default function Auctions() {
                               await tx.wait()   
                               loadAuctions()
                               Swal.close()
+                            }else if( result.value < comparePrice ) {
+                              Swal.fire({
+                                title : `Bid should be gretaer than ${nft.highestBid >  nft.minBid  ?  'Highest Bid': 'Minimum Bid'} `
+                              })
                             }
                   
                           }
