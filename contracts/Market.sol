@@ -14,7 +14,7 @@ contract NFTMarket is ReentrancyGuard {
 
     address payable owner;
     uint256 listingPrice = 0.025 ether;
-    
+
     constructor() {
         owner = payable(msg.sender);
     }
@@ -122,17 +122,24 @@ contract NFTMarket is ReentrancyGuard {
             }
         }
         return items;
-    } 
+    }
 
-    function fetchItemsListedByUser(address seller , address nftContract, uint256 tokenId) public view returns (bool) {  
-
+    function fetchItemsListedByUser(
+        address seller,
+        address nftContract,
+        uint256 tokenId
+    ) public view returns (bool) {
         uint256 itemCount = _itemIds.current();
         for (uint256 i = 0; i < itemCount; i++) {
-            if (idToMarketItem[i + 1].nftContract == nftContract && idToMarketItem[i + 1].tokenId == tokenId && idToMarketItem[i + 1].seller == seller) {
-               return true ; 
+            if (
+                idToMarketItem[i + 1].nftContract == nftContract &&
+                idToMarketItem[i + 1].tokenId == tokenId &&
+                idToMarketItem[i + 1].seller == seller
+            ) {
+                return true;
             }
         }
-        return false ; 
+        return false;
     }
 
     /* Returns onlyl items that a user has purchased */
@@ -181,8 +188,5 @@ contract NFTMarket is ReentrancyGuard {
             }
         }
         return items;
-    } 
-
-
-    
+    }
 }

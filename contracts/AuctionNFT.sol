@@ -122,7 +122,8 @@ contract AuctionNFT is Ownable, IERC721Receiver {
     // EVENTS
 
     event AuctionStateChanged(bool _state);
-    event AuctionCreated(address _tokenAddress, uint256 _tokenId);
+    event AuctionCreated(address  _tokenAddress, uint256 _tokenId); 
+    event AuctionSettled(address _tokenAddress, uint256 _tokenId);
 
     function setAuctionState(bool _state) external onlyOwner {
         pause = _state;
@@ -163,7 +164,8 @@ contract AuctionNFT is Ownable, IERC721Receiver {
     }
 
     function _resetAuction(address _tokenAddress, uint256 _tokenId) internal {
-        delete auctions[_tokenAddress][_tokenId];
+        delete auctions[_tokenAddress][_tokenId]; 
+        emit AuctionSettled(_tokenAddress , _tokenId ) ; 
     }
 
     function settleAuction(address _tokenAddress, uint256 _tokenId)

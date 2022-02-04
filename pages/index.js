@@ -24,7 +24,7 @@ export default function Home() {
   }, [])
   async function loadNFTs() {     
 
-    
+
     const provider = await new ethers.providers.JsonRpcProvider('https://rpc-mumbai.maticvigil.com')
     const tokenContract = new ethers.Contract(nftaddress, NFT.abi, provider)
     const marketContract = new ethers.Contract(nftmarketaddress, Market.abi, provider)
@@ -32,8 +32,9 @@ export default function Home() {
     
     const items = await Promise.all(data.map(async i => {
       const tokenUri = await tokenContract.tokenURI(i.tokenId)
-      const meta = await axios.get(tokenUri)
-      let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
+      const meta = await axios.get(tokenUri) 
+      let price = ethers.utils.formatUnits(i.price.toString(), 'ether') 
+      console.log("$$$$$ price : " , price)
       let item = {
         price,
         itemId: i.itemId.toNumber(),
@@ -48,18 +49,24 @@ export default function Home() {
     setNfts(items)
     setLoadingState('loaded') 
   }
-  async function buyNft(nft) {
+  async function buyNft(nft) {  
+
+    console.log(nft)
+
     const web3Modal = new Web3Modal()
     const connection = await web3Modal.connect()
     const provider = new ethers.providers.Web3Provider(connection)
     const signer = provider.getSigner()
     const contract = new ethers.Contract(nftmarketaddress, Market.abi, signer)
 
-    const price = ethers.utils.parseUnits(nft.price.toString(), 'ether')
+    const price = ethers.utils.parseUnits(nft.price.toString() , 'ether') 
+    console.log("HErte2  :$$$$$ " , price) 
+    //console.log(price.toNumber()) //1000000000000000
     const transaction = await contract.createMarketSale(nftaddress, nft.itemId, {
       value: price
     })
-    await transaction.wait()
+    await transaction.wait() 
+
     loadNFTs()
   }
   if (loadingState === 'loaded' && !nfts.length) return (<h1 className="px-20 py-10 text-3xl">No items in marketplace</h1>)
@@ -89,3 +96,4 @@ export default function Home() {
     </div>
   )
 }
+ 

@@ -2,14 +2,17 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import axios from 'axios' 
 import { useRouter } from 'next/router'
-import Web3Modal from "web3modal"
+import Web3Modal from "web3modal"  
+import Swal from 'sweetalert2'
+
 
 import {
-  nftmarketaddress, nftaddress
+  nftmarketaddress, nftaddress , auction
 } from '../config'
 
 import Market from '../artifacts/contracts/Market.sol/NFTMarket.json'
-import NFT from '../artifacts/contracts/NFT.sol/NFT.json'
+import NFT from '../artifacts/contracts/NFT.sol/NFT.json' 
+import Auction from '../artifacts/contracts/AuctionNFT.sol/AuctionNFT.json'
 
 export default function MyAssets() {
   const [nfts, setNfts] = useState([]) 
@@ -19,12 +22,14 @@ export default function MyAssets() {
 
 
   useEffect(() => {
-    loadNFTs()  
+   // loadNFTs()  
     loadNFTs2()
 
   }, [])  
 
   async function loadNFTs2() {   
+
+   try { 
 
     const web3Modal = new Web3Modal({
       network: "mainnet",
@@ -46,12 +51,17 @@ export default function MyAssets() {
       let item = {
         tokenContract : {address : nftaddress } ,
         tokenId: i ,
-        image: meta.data.image,
+        image: meta.data.image, 
+        name:meta.data.name
       }
       return item
     })) 
 
     setOwnedNfts(items)
+     
+   } catch (error) {
+      console.log(error)
+   }
     
 
 
@@ -60,39 +70,52 @@ export default function MyAssets() {
   
 
   async function loadNFTs() {
-    const web3Modal = new Web3Modal({
-      network: "mainnet",
-      cacheProvider: true,
-    })
-    const connection = await web3Modal.connect()
-    const provider = new ethers.providers.Web3Provider(connection)
-    const signer = provider.getSigner()
-   
-    
+    try{ 
 
-    const marketContract = new ethers.Contract(nftmarketaddress, Market.abi, signer)
-    const tokenContract = new ethers.Contract(nftaddress, NFT.abi, provider)
-        const data = await marketContract.fetchMyNFTs()
-        
-    const items = await Promise.all(data.map(async i => {
-      const tokenUri = await tokenContract.tokenURI(i.tokenId)
-      const meta = await axios.get(tokenUri)
-      let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
-      let item = {
-        price,
-        tokenId: i.tokenId.toNumber(),
-        seller: i.seller,
-        owner: i.owner,
-        image: meta.data.image,
-      }
-      return item
-    }))
-    setNfts(items)
-    setLoadingState('loaded') 
+      const web3Modal = new Web3Modal({
+        network: "mainnet",
+        cacheProvider: true,
+      })
+      const connection = await web3Modal.connect()
+      const provider = new ethers.providers.Web3Provider(connection)
+      const signer = provider.getSigner()
+     
+      
+  
+      const marketContract = new ethers.Contract(nftmarketaddress, Market.abi, signer)
+      const tokenContract = new ethers.Contract(nftaddress, NFT.abi, provider)
+          const data = await marketContract.fetchMyNFTs()
+          
+      const items = await Promise.all(data.map(async i => {
+        const tokenUri = await tokenContract.tokenURI(i.tokenId)
+        const meta = await axios.get(tokenUri) 
+        console.log(meta)
+        let price = ethers.utils.formatUnits(i.price.toString(), 'ether')
+        let item = {
+          price,
+          tokenId: i.tokenId.toNumber(),
+          seller: i.seller,
+          owner: i.owner,
+          image: meta.data.image, 
+          name:meta.data.name
+        }
+        return item
+      }))
+      setNfts(items)
+      setLoadingState('loaded') 
+
+    }catch(error){
+      console.log(error)
+    }
   }    
 
-  async function listForSale(nft)  {
-    try {
+  async function listForSale(nft)  {    
+
+    try {   
+
+
+
+
       console.log('listForSale : ' , nft)  
 
     const web3Modal = new Web3Modal()
@@ -110,7 +133,7 @@ export default function MyAssets() {
     let aprice = ethers.utils.parseUnits('0.001', 'ether')
     console.log( aprice);
 
-    //tokenid to be corrected 
+   // tokenid to be corrected 
     let transaction = await contract.createMarketItem(nft.tokenContract.address.toString() , nft.tokenId , aprice , { value: listingPrice })
     await transaction.wait() 
     router.push('/') 
@@ -121,30 +144,62 @@ export default function MyAssets() {
 
   } 
 
-    async function listForAuction(nft) {
-    console.log('listForAuction : ' , nft )   
-    const web3Modal = new Web3Modal()
-    const connection = await web3Modal.connect()
-    const provider = new ethers.providers.Web3Provider(connection)       
-    const signer = provider.getSigner()   
+    async function listForAuction(nft) { 
 
-   
 
-    const tokenContract = new ethers.Contract(nftaddress, NFT.abi, signer) 
-    let tx = await tokenContract.setApprovalForAll(auction , true )
-    await tx.wait() 
+      
+            const { value: formValues } = await Swal.fire({ 
 
-    let contract = new ethers.Contract(auction, Auction.abi, signer)   
-    let auctionEnd  = Math.floor(new Date().getTime() / 1000) + 86400  
-    let aprice = ethers.utils.parseUnits(nft.price, 'ether')
-    console.log( aprice);
+                    title: 'Create Auction',
+                    showCancelButton: true,
+                    html:
+                      '<input id="swal-input1" class="swal2-input">' +
+                      '<input id="swal-input2" type="date" class="swal2-input">'+ 
+                      '<input id="swal-input3" type="time" class="swal2-input">' ,
+                    focusConfirm: false,
 
-    let transaction = await contract.createAuction(nft.tokenContract.address.toString() , tokenId.tokenId , aprice ,auctionEnd )
-    await transaction.wait() 
+                    preConfirm: () => {
+                      return [
+                        document.getElementById('swal-input1').value,
+                        document.getElementById('swal-input2').value ,
+                        document.getElementById('swal-input3').value
+                      ]
 
-    console.log(" pushed to auction " ) 
 
-    
+                    }
+                  })
+
+            if (formValues) { 
+
+                    console.log(formValues) 
+                    console.log(typeof formValues)
+
+                    // console.log('listForAuction : ' , nft )   
+                    // const web3Modal = new Web3Modal()
+                    // const connection = await web3Modal.connect()
+                    // const provider = new ethers.providers.Web3Provider(connection)       
+                    // const signer = provider.getSigner()   
+                
+                   
+                
+                    // const tokenContract = new ethers.Contract(nftaddress, NFT.abi, signer) 
+                    // let tx = await tokenContract.setApprovalForAll(auction , true )
+                    // await tx.wait() 
+                
+                    // let contract = new ethers.Contract(auction, Auction.abi, signer)   
+                    // let auctionEnd  = Math.floor(new Date().getTime() / 1000) + 600  
+                    // let aprice = ethers.utils.parseUnits('0.001', 'ether')
+                    // console.log( aprice);
+                
+                    // let transaction = await contract.createAuction(nft.tokenContract.address.toString() , nft.tokenId , aprice ,auctionEnd )
+                    // await transaction.wait() 
+                
+                    // router.push('/auctions') 
+            } 
+
+
+
+
   }
 
 
@@ -202,15 +257,3 @@ export default function MyAssets() {
   )
 } 
 
-
-/*
-
-<button onClick={() => listForAuction(nft)} className="font-bold mt-4 bg-pink-500 text-white rounded p-4 shadow-lg mr-2">
-                    Auction
-                  </button> 
-                  <span className='font-bold' >Or</span>
-                  <button  onClick={() => listForSale(nft) }  className="font-bold mt-4 bg-pink-500 text-white rounded p-4 shadow-lg ml-2 ">
-                    List
-                  </button> 
-
-*/

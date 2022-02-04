@@ -4,10 +4,10 @@ const fs = require('fs');
 async function main() { 
 
 
-  const factory = await hre.ethers.getContractFactory("MockNFT");
-  const MockNFT = await factory.deploy();
-  await MockNFT.deployed();
-  console.log("nftMarket deployed to:", MockNFT.address);
+  // const factory = await hre.ethers.getContractFactory("MockNFT");
+  // const MockNFT = await factory.deploy();
+  // await MockNFT.deployed();
+  // console.log("nftMarket deployed to:", MockNFT.address);
 
   const factory2 = await hre.ethers.getContractFactory("AuctionNFT");
   const AuctionNFT = await factory2.deploy();
