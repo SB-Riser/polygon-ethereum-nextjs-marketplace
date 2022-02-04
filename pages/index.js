@@ -2,6 +2,8 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import Web3Modal from "web3modal"
+import Swal from "sweetalert2"
+
 
 import {
   nftaddress, nftmarketaddress
@@ -21,15 +23,16 @@ export default function Home() {
   const [loadingState, setLoadingState] = useState('not-loaded')
   useEffect(() => {
     loadNFTs()
-  }, [])
-  async function loadNFTs() {     
+  }, []) 
+
+  async function loadNFTs() {
 
 
     const provider = await new ethers.providers.JsonRpcProvider('https://rpc-mumbai.maticvigil.com')
     const tokenContract = new ethers.Contract(nftaddress, NFT.abi, provider)
     const marketContract = new ethers.Contract(nftmarketaddress, Market.abi, provider)
     const data = await marketContract.fetchMarketItems()
-    
+
     const items = await Promise.all(data.map(async i => {
       const tokenUri = await tokenContract.tokenURI(i.tokenId)
       const meta = await axios.get(tokenUri) 
@@ -47,50 +50,64 @@ export default function Home() {
       return item
     }))
     setNfts(items)
-    setLoadingState('loaded') 
+    setLoadingState('loaded')
   }
-  async function buyNft(nft) {  
-
-    console.log(nft)
-
+  async function buyNft(nft) {
+    console.log(nft);
     const web3Modal = new Web3Modal()
     const connection = await web3Modal.connect()
     const provider = new ethers.providers.Web3Provider(connection)
     const signer = provider.getSigner()
     const contract = new ethers.Contract(nftmarketaddress, Market.abi, signer)
 
-    const price = ethers.utils.parseUnits(nft.price.toString() , 'ether') 
-    console.log("HErte2  :$$$$$ " , price) 
-    //console.log(price.toNumber()) //1000000000000000
+    const price = ethers.utils.parseUnits(nft.price, 'ether')
+    // console.log(price.toNumber());
     const transaction = await contract.createMarketSale(nftaddress, nft.itemId, {
-      value: price
+      value: price.toNumber().toString()
     })
     await transaction.wait() 
 
     loadNFTs()
-  }
+  } 
+  
   if (loadingState === 'loaded' && !nfts.length) return (<h1 className="px-20 py-10 text-3xl">No items in marketplace</h1>)
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center max-w-7xl mx-auto">
       <div className="px-4" style={{ maxWidth: '1600px' }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
           {
             nfts.map((nft, i) => (
               <div key={i} className="border shadow rounded-xl overflow-hidden">
-                <img src={nft.image} />
+                <img className='rounded-t' src={nft.image} style={{ overflow: "hidden" }} />
                 <div className="p-4">
                   <p style={{ height: '64px' }} className="text-2xl font-semibold">{nft.name}</p>
                   <div style={{ height: '70px', overflow: 'hidden' }}>
                     <p className="text-gray-400">{nft.description}</p>
                   </div>
                 </div>
-                <div className="p-4 bg-black">
-                  <p className="text-2xl mb-4 font-bold text-white">{nft.price} ETH</p>
-                  <button className="w-full bg-pink-500 text-white font-bold py-2 px-12 rounded" onClick={() => buyNft(nft)}>Buy</button>
+                <div className="p-4 bg-gray-400">
+                  <p className="text-center text-2xl mb-4 font-bold text-white">{nft.price} MATIC</p>
+                   <button className="w-full bg-green-500 text-white font-bold py-2 px-12 rounded" onClick={
+                      () => {
+                        Swal.fire({
+                          title: "NFT price",
+                          text: "Price In Matic",
+                          input: "text",
+                          inputValue: nft.price,
+                          showCancelBotton: false
+                        }).then((result) => {
+                          if (result.value) {
+                            console.log(result.value);
+                          }
+                        })
+                        buyNft(nft)
+                      }  
+                    }>Buy</button>
                 </div>
               </div>
             ))
           }
+
         </div>
       </div>
     </div>
